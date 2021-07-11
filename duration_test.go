@@ -1,6 +1,11 @@
 package duration
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
 
 var durationTests = []struct {
 	str string
@@ -23,17 +28,9 @@ var durationTests = []struct {
 
 func TestDurationString(t *testing.T) {
 	for _, tt := range durationTests {
-		if str := tt.d.String(); str != tt.str {
-			t.Errorf("Duration(%d).String() = %s, want %s", int64(tt.d), str, tt.str)
-		} else {
-			t.Logf("Duration(%d).String() = %s", int64(tt.d), str)
-		}
+		assert.Equal(t, tt.str, tt.d.String(), tt.str)
 		if tt.d > 0 {
-			if str := (-tt.d).String(); str != "-"+tt.str {
-				t.Errorf("Duration(%d).String() = %s, want %s", int64(-tt.d), str, "-"+tt.str)
-			} else {
-				t.Logf("Duration(%d).String() = %s", int64(-tt.d), str)
-			}
+			assert.Equal(t, "-"+tt.str, (-tt.d).String(), tt.str)
 		}
 	}
 }
@@ -115,12 +112,12 @@ var parseDurationTests = []struct {
 func TestParseDuration(t *testing.T) {
 	for _, tc := range parseDurationTests {
 		d, err := ParseDuration(tc.in)
-		if tc.ok && (err != nil || d != tc.want) {
-			t.Errorf("ParseDuration(%q) = %v, %v, want %v, nil", tc.in, d, err, tc.want)
-		} else if !tc.ok && err == nil {
-			t.Errorf("ParseDuration(%q) = _, nil, want _, non-nil", tc.in)
-		} else {
-			t.Logf("ParseDuration(%q) = %v", tc.in, d)
+		if !tc.ok {
+			assert.Error(t, err, tc.in)
+			continue
 		}
+
+		require.NoError(t, err, tc.in)
+		assert.Equal(t, tc.want, d, tc.in)
 	}
 }
