@@ -54,23 +54,28 @@ func (d Duration) String() string {
 		w, u = fmtFrac(buf[:w], u, prec)
 		w = fmtInt(buf[:w], u)
 
-	} else if u > uint64(Week) {
+	} else if u >= uint64(Week) {
 		// Special case: if duration is larger than a week,
 		// use bigger units like 4w3d2h
-		w--
-		buf[w] = 'h'
-
 		u /= uint64(Hour)
 
-		// u is now integer hours
-		w = fmtInt(buf[:w], u%24)
+		if u%24 != 0 {
+			w--
+			buf[w] = 'h'
+
+			// u is now integer hours
+			w = fmtInt(buf[:w], u%24)
+		}
+
 		u /= 24
 
 		// u is now integer days
 		if u > 0 {
-			w--
-			buf[w] = 'd'
-			w = fmtInt(buf[:w], u%7)
+			if u%7 != 0 {
+				w--
+				buf[w] = 'd'
+				w = fmtInt(buf[:w], u%7)
+			}
 			u /= 7
 
 			// u is now integer weeks
@@ -82,23 +87,29 @@ func (d Duration) String() string {
 			}
 		}
 
-	} else if u > uint64(Day) {
+	} else if u >= uint64(Day) {
 		// Special case: if duration is larger than a day,
 		// use bigger units like 3d2h6m
-		w--
-		buf[w] = 'm'
-
 		u /= uint64(Minute)
 
-		// u is now integer minutes
-		w = fmtInt(buf[:w], u%60)
+		if u%60 != 0 {
+			w--
+			buf[w] = 'm'
+
+			// u is now integer minutes
+			w = fmtInt(buf[:w], u%60)
+		}
+
 		u /= 60
 
 		// u is now integer hours
 		if u > 0 {
-			w--
-			buf[w] = 'h'
-			w = fmtInt(buf[:w], u%24)
+			if u%24 != 0 {
+				w--
+				buf[w] = 'h'
+				w = fmtInt(buf[:w], u%24)
+			}
+
 			u /= 24
 
 			// u is now integer weeks
@@ -110,20 +121,26 @@ func (d Duration) String() string {
 		}
 
 	} else {
-		w--
-		buf[w] = 's'
+		if !zeroSeconds(u, 9) {
+			w--
+			buf[w] = 's'
 
-		w, u = fmtFrac(buf[:w], u, 9)
+			w, u = fmtFrac(buf[:w], u, 9)
+			w = fmtInt(buf[:w], u%60)
+		} else {
+			u /= 1000000000 // = 10^9
+		}
 
 		// u is now integer seconds
-		w = fmtInt(buf[:w], u%60)
 		u /= 60
 
 		// u is now integer minutes
 		if u > 0 {
-			w--
-			buf[w] = 'm'
-			w = fmtInt(buf[:w], u%60)
+			if u%60 != 0 {
+				w--
+				buf[w] = 'm'
+				w = fmtInt(buf[:w], u%60)
+			}
 			u /= 60
 
 			// u is now integer hours
@@ -142,6 +159,20 @@ func (d Duration) String() string {
 	}
 
 	return string(buf[w:])
+}
+
+// zeroSeconds returns true if the number of seconds with a
+// precision `prec` equals to 0.
+func zeroSeconds(v uint64, prec int) bool {
+	for i := 0; i < prec; i++ {
+		if v%10 != 0 {
+			return false
+		}
+
+		v /= 10
+	}
+
+	return v%60 == 0
 }
 
 // fmtFrac formats the fraction of v/10**prec (e.g., ".12345") into the

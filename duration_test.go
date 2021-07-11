@@ -20,10 +20,13 @@ var durationTests = []struct {
 	{"4m5.001s", 4*Minute + 5001*Millisecond},
 	{"5h6m7.001s", 5*Hour + 6*Minute + 7001*Millisecond},
 	{"2d3h4m", 2*Day + 3*Hour + 4*Minute},
-	{"6w3d0h", 6*Week + 3*Day},
+	{"6w3d", 6*Week + 3*Day},
 	{"8m0.000000001s", 8*Minute + 1*Nanosecond},
 	{"15250w1d23h", 1<<63 - 1},
 	{"-15250w1d23h", -1 << 63},
+	{"1h", 1 * Hour},
+	{"1d", 1 * Day},
+	{"1w", 1 * Week},
 }
 
 func TestDurationString(t *testing.T) {
